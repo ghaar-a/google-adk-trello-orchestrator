@@ -3,7 +3,6 @@ from tools.trello_api import fetch_cards, fetch_lists, move_card
 
 BOARD_ID = os.getenv("TRELLO_BOARD_ID")
 
-
 def listar_cards_tool() -> str:
     """
     Lista todos os cards do Trello de forma amigável para o agente.
@@ -19,21 +18,23 @@ def listar_cards_tool() -> str:
 
     return resultado
 
-
 def concluir_card_tool(nome_card: str) -> str:
     """
-    Move um card para a lista 'Done' baseado no nome.
+    Move um card para a lista de conclusão baseando-se no nome da lista (Done/Concluído).
     """
     cards = fetch_cards(BOARD_ID)
     lists = fetch_lists(BOARD_ID)
 
-    # encontrar lista DONE (última)
-    lista_done = lists[-1]["id"]
+    # BUSCA DINÂMICA: Procura uma lista que contenha "done" ou "conclu" no nome
+    lista_done = next((l["id"] for l in lists if "done" in l["name"].lower() or "conclu" in l["name"].lower()), None)
 
-    # buscar card pelo nome
+    if not lista_done:
+        return "❌ Erro: Não encontrei uma coluna chamada 'Done' ou 'Concluído' neste board."
+
+    # Buscar card pelo nome
     for card in cards:
         if nome_card.lower() in card["name"].lower():
             move_card(card["id"], lista_done)
-            return f"✅ Card '{card['name']}' movido para Done."
+            return f"✅ Card '{card['name']}' movido para a coluna de conclusão."
 
-    return f"❌ Card '{nome_card}' não encontrado."
+    return f"❌ Card '{nome_card}' não encontrado no board."
